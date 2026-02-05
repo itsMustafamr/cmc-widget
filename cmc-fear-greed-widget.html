@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMC Fear & Greed Index</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            color: #e6edf3;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .widget {
+            background: rgba(22, 27, 34, 0.95);
+            border: 1px solid rgba(48, 54, 61, 0.8);
+            border-radius: 16px;
+            padding: 28px;
+            width: 100%;
+            max-width: 340px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .header-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #3861fb, #6b8cff);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e6edf3;
+        }
+        
+        .header .subtitle {
+            font-size: 11px;
+            color: #8b949e;
+            font-weight: 400;
+        }
+        
+        .gauge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 24px 0;
+        }
+        
+        .gauge {
+            position: relative;
+            width: 180px;
+            height: 90px;
+            overflow: hidden;
+        }
+        
+        .gauge-bg {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 180deg,
+                #ea3943 0deg,
+                #ea3943 36deg,
+                #ea8c00 36deg,
+                #ea8c00 72deg,
+                #f3d42f 72deg,
+                #f3d42f 108deg,
+                #93d900 108deg,
+                #93d900 144deg,
+                #16c784 144deg,
+                #16c784 180deg
+            );
+            clip-path: polygon(0 50%, 100% 50%, 100% 0, 0 0);
+        }
+        
+        .gauge-inner {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: #161b22;
+            border-radius: 50%;
+            top: 30px;
+            left: 30px;
+        }
+        
+        .gauge-needle {
+            position: absolute;
+            width: 3px;
+            height: 60px;
+            background: #e6edf3;
+            bottom: 0;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(-90deg);
+            border-radius: 2px;
+            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(230, 237, 243, 0.5);
+        }
+        
+        .gauge-center {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #e6edf3;
+            border-radius: 50%;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .value-display {
+            text-align: center;
+            margin-top: 16px;
+        }
+        
+        .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 52px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .classification {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 6px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .updated {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 10px;
+            color: #8b949e;
+        }
+        
+        .powered-by {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 9px;
+            color: #6e7681;
+        }
+        
+        .powered-by a {
+            color: #3861fb;
+            text-decoration: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px 0;
+            color: #8b949e;
+        }
+        
+        .loading-spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(56, 97, 251, 0.2);
+            border-top-color: #3861fb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error {
+            text-align: center;
+            padding: 30px 16px;
+            color: #ea3943;
+        }
+        
+        /* Color classes */
+        .extreme-fear { color: #ea3943; }
+        .fear { color: #ea8c00; }
+        .neutral { color: #f3d42f; }
+        .greed { color: #93d900; }
+        .extreme-greed { color: #16c784; }
+    </style>
+</head>
+<body>
+    <div class="widget">
+        <div class="header">
+            <div class="header-icon">CMC</div>
+            <div>
+                <h1>Fear & Greed Index</h1>
+                <div class="subtitle">CoinMarketCap Sentiment</div>
+            </div>
+        </div>
+        
+        <div id="content">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <div>Loading sentiment...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Your CloudFlare Worker URL
+        const API_URL = 'https://cmc-proxy.mr-mohdmustafa007.workers.dev';
+        
+        function getColorClass(value) {
+            if (value <= 20) return 'extreme-fear';
+            if (value <= 40) return 'fear';
+            if (value <= 60) return 'neutral';
+            if (value <= 80) return 'greed';
+            return 'extreme-greed';
+        }
+        
+        function getNeedleRotation(value) {
+            return -90 + (value * 1.8);
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        async function fetchData() {
+            try {
+                const response = await fetch(API_URL);
+                const result = await response.json();
+                
+                if (result.data) {
+                    renderWidget(result.data);
+                } else if (result.status && result.status.error_message) {
+                    throw new Error(result.status.error_message);
+                } else {
+                    throw new Error('No data received');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('content').innerHTML = `
+                    <div class="error">
+                        <p>Unable to load data</p>
+                        <p style="font-size: 11px; margin-top: 8px; color: #8b949e;">
+                            ${error.message || 'Check connection'}
+                        </p>
+                    </div>
+                `;
+            }
+        }
+        
+        function renderWidget(data) {
+            const value = data.value;
+            const classification = data.value_classification;
+            const colorClass = getColorClass(value);
+            const rotation = getNeedleRotation(value);
+            
+            document.getElementById('content').innerHTML = `
+                <div class="gauge-container">
+                    <div class="gauge">
+                        <div class="gauge-bg"></div>
+                        <div class="gauge-inner"></div>
+                        <div class="gauge-needle" style="transform: translateX(-50%) rotate(${rotation}deg);"></div>
+                        <div class="gauge-center"></div>
+                    </div>
+                    <div class="value-display">
+                        <div class="value ${colorClass}">${value}</div>
+                        <div class="classification ${colorClass}">${classification}</div>
+                    </div>
+                </div>
+                
+                <div class="updated">
+                    Updated: ${formatDate(data.update_time)}
+                </div>
+                
+                <div class="powered-by">
+                    Powered by <a href="https://coinmarketcap.com" target="_blank">CoinMarketCap</a>
+                </div>
+            `;
+        }
+        
+        // Initial fetch
+        fetchData();
+        
+        // Refresh every 5 minutes
+        setInterval(fetchData, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
